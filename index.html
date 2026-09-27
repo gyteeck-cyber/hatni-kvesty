@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Хатні Квести 🏠</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBS8ulJDk3qRWGtdzN6CvERrDSrUlQix9U",
+    authDomain: "hatni-kvesty.firebaseapp.com",
+    projectId: "hatni-kvesty",
+    storageBucket: "hatni-kvesty.firebasestorage.app",
+    messagingSenderId: "1014934288256",
+    appId: "1:1014934288256:web:77d783243e00ed0fe1b365"
+  };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+
+<style>
+  :root{
+    --bg:#EAF7F0;
+    --surface:#FFFFFF;
+    --ink:#243040;
+    --ink-soft:#657485;
+    --p1:#FF5D8F;
+    --p1-soft:#FFE1EC;
+    --p2:#2E9BFF;
+    --p2-soft:#DDEFFF;
+    --gold:#FFC93C;
+    --green:#3ACB7E;
+    --radius-lg:26px;
+    --radius-md:18px;
+    --shadow-p1:5px 5px 0 rgba(255,93,143,.22);
+    --shadow-p2:5px 5px 0 rgba(46,155,255,.22);
+    --font-display:'Baloo 2', system-ui, sans-serif;
+    --font-body:'Nunito', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    background-color:var(--bg);
+    background-image:radial-gradient(circle at 18px 18px, #ffffffa0 2px, transparent 2px);
+    background-size:38px 38px;
+    font-family:var(--font-body);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:var(--font-display);margin:0;}
+  button{font-family:var(--font-body);}
+  .app-shell{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:96px;display:flex;flex-direction:column;}
+  .app-header{display:flex;align-items:center;justify-content:space-between;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 4px;}
+  .app-header h1{font-size:1.4rem;font-weight:800;}
+  .icon-btn{background:var(--surface);border:2px solid #00000010;width:42px;height:42px;border-radius:14px;font-size:1.15rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+
+  .scoreboard{display:flex;align-items:center;gap:6px;padding:12px 14px 4px;animation:popIn .5s ease;}
+  @keyframes popIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+  .player-card{flex:1;background:var(--surface);border-radius:var(--radius-lg);padding:14px 8px 12px;text-align:center;border:3px solid transparent;min-width:0;}
+  .player-card.p1{border-color:var(--p1);box-shadow:var(--shadow-p1);}
+  .player-card.p2{border-color:var(--p2);box-shadow:var(--shadow-p2);}
+  .level-ring{width:60px;height:60px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;}
+  .level-ring .ring-inner{width:49px;height:49px;background:var(--surface);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .lvl-num{font-family:var(--font-display);font-weight:800;font-size:1.05rem;line-height:1;}
+  .lvl-word{font-size:.5rem;font-weight:700;color:var(--ink-soft);}
+  .avatar-emoji{font-size:1.5rem;line-height:1;}
+  .player-name{font-weight:800;font-family:var(--font-display);margin-top:4px;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .you-tag{font-weight:700;color:var(--ink-soft);font-size:.68rem;}
+  .xp-bar-track{background:#00000012;border-radius:20px;height:9px;margin-top:8px;overflow:hidden;}
+  .xp-bar-fill{height:100%;border-radius:20px;transition:width .6s ease;}
+  .p1 .xp-bar-fill{background:var(--p1);}
+  .p2 .xp-bar-fill{background:var(--p2);}
+  .xp-caption{font-size:.62rem;color:var(--ink-soft);margin-top:4px;font-weight:700;}
+  .streak-pill{display:inline-flex;align-items:center;gap:3px;font-size:.66rem;margin-top:6px;background:#FFF3D6;color:#8a5a00;padding:2px 8px;border-radius:20px;font-weight:800;}
+  .vs-badge{width:32px;height:32px;border-radius:50%;background:var(--gold);color:#fff;font-family:var(--font-display);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.72rem;box-shadow:0 3px 0 #d9a600;flex-shrink:0;}
+
+  main{flex:1;}
+  .tab-panel{display:none;padding:4px 16px 10px;}
+  .tab-panel.active{display:block;}
+  .section-title{font-weight:800;font-size:1rem;margin:18px 0 10px;}
+  .section-title:first-child{margin-top:8px;}
+
+  .quest-card{background:#FFF8E1;border:2px dashed var(--gold);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+  .quest-card .quest-emoji{font-size:1.4rem;flex-shrink:0;}
+  .quest-text{flex:1;font-weight:700;font-size:.86rem;min-width:0;}
+  .quest-text small{display:block;font-weight:700;color:var(--ink-soft);margin-bottom:2px;font-size:.68rem;}
+  .btn-done{background:var(--green);color:#fff;border:none;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+
+  .activity-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #00000010;font-size:.84rem;}
+  .activity-item:last-child{border-bottom:none;}
+  .a-emoji{font-size:1.2rem;flex-shrink:0;}
+  .a-meta{flex:1;min-width:0;}
+  .a-time{font-size:.66rem;color:var(--ink-soft);flex-shrink:0;}
+
+  .empty-note{text-align:center;color:var(--ink-soft);font-size:.85rem;padding:24px 10px;}
+
+  .chore-row{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;box-shadow:4px 4px 0 #0000000d;}
+  .chore-emoji{font-size:1.35rem;width:30px;text-align:center;flex-shrink:0;}
+  .chore-info{flex:1;min-width:0;}
+  .chore-title{font-weight:800;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .chore-xp{font-size:.7rem;color:var(--ink-soft);font-weight:700;}
+  .chore-actions{display:flex;gap:6px;flex-shrink:0;}
+  .avatar-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;background:#f2f2f2;font-size:1.05rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .avatar-btn.p1{border-color:var(--p1);}
+  .avatar-btn.p2{border-color:var(--p2);}
+  .avatar-btn.me{box-shadow:0 0 0 3px var(--gold);}
+  .chore-del{background:none;border:none;color:#c94b4b;font-size:1rem;cursor:pointer;padding:2px 4px;}
+
+  .btn-primary{background:var(--ink);color:#fff;border:none;border-radius:16px;padding:13px 18px;font-family:var(--font-display);font-weight:700;font-size:.95rem;cursor:pointer;width:100%;}
+  .btn-primary:disabled{opacity:.5;cursor:default;}
+  .btn-secondary{background:var(--surface);border:2px solid #00000015;border-radius:16px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);}
+  .link-btn{background:none;border:none;color:var(--ink-soft);text-decoration:underline;font-size:.78rem;cursor:pointer;padding:6px 0;display:block;margin:0 auto;}
+
+  .chart{display:flex;align-items:flex-end;gap:7px;height:130px;background:var(--surface);border-radius:var(--radius-md);padding:14px 10px 8px;margin-bottom:14px;}
+  .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;}
+  .chart-bars{display:flex;align-items:flex-end;gap:3px;height:100%;}
+  .chart-bar{width:8px;border-radius:4px 4px 0 0;min-height:2px;transition:height .5s ease;}
+  .chart-bar.p1{background:var(--p1);}
+  .chart-bar.p2{background:var(--p2);}
+  .chart-label{font-size:.6rem;color:var(--ink-soft);font-weight:700;text-transform:lowercase;}
+
+  .balance-track{display:flex;height:28px;border-radius:20px;overflow:hidden;margin-bottom:6px;}
+  .balance-seg{display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;transition:width .5s ease;}
+  .balance-caption{text-align:center;font-weight:700;font-size:.82rem;margin:0 0 18px;}
+
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-box-player{background:var(--surface);border-radius:16px;padding:14px;box-shadow:3px 3px 0 #0000000d;}
+  .stat-box-player h4{font-size:.9rem;margin-bottom:8px;}
+  .stat-row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px;color:var(--ink-soft);}
+  .stat-row b{font-family:var(--font-display);color:var(--ink);}
+
+  #achPlayerToggle{display:flex;gap:8px;}
+  #achPlayerToggle button{flex:1;}
+  .ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+  .ach-item{background:var(--surface);border-radius:18px;padding:10px 4px;text-align:center;box-shadow:3px 3px 0 #0000000d;}
+  .ach-item.locked{opacity:.42;filter:grayscale(1);}
+  .ach-emoji{font-size:1.5rem;}
+  .ach-title{font-size:.64rem;font-weight:800;margin-top:4px;line-height:1.15;}
+  .ach-date{font-size:.58rem;color:var(--ink-soft);margin-top:2px;}
+
+  .bottom-nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--surface);display:flex;border-top:2px solid #00000010;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));}
+  .tab-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.64rem;color:var(--ink-soft);padding:6px 0;border-radius:12px;font-weight:800;cursor:pointer;}
+  .tab-btn .tab-emoji{font-size:1.2rem;}
+  .tab-btn.active{color:var(--ink);background:var(--p1-soft);}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(20,20,30,.45);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal-backdrop.open{display:flex;}
+  .modal-sheet{position:relative;background:var(--bg);width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom,0px));max-height:86vh;overflow-y:auto;animation:sheetUp .25s ease;}
+  @keyframes sheetUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-sheet p.sub{color:var(--ink-soft);font-size:.85rem;margin:-8px 0 14px;}
+  label{font-weight:700;font-size:.8rem;color:var(--ink-soft);display:block;margin-bottom:5px;}
+  input[type=text],select,textarea{width:100%;padding:11px 12px;border-radius:14px;border:2px solid #00000015;font-family:var(--font-body);font-size:.95rem;margin-bottom:14px;background:#fff;color:var(--ink);}
+  textarea{resize:vertical;}
+  .emoji-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .emoji-choice{width:40px;height:40px;border-radius:12px;border:2px solid #00000012;background:#fff;font-size:1.25rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .emoji-choice.selected{border-color:var(--gold);background:#FFF3D6;}
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .chip{background:#fff;border:2px solid #00000012;border-radius:20px;padding:8px 12px;font-size:.8rem;font-weight:700;cursor:pointer;}
+  .chip.selected{border-color:var(--p1);background:var(--p1-soft);}
+  .close-x{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.2rem;color:var(--ink-soft);cursor:pointer;display:none;}
+  .setup-whoami-row{display:flex;gap:8px;margin-bottom:16px;}
+  .setup-whoami-choice{flex:1;padding:10px;border-radius:14px;border:2px solid #00000015;background:#fff;text-align:center;font-weight:700;font-size:.82rem;cursor:pointer;}
+  .setup-whoami-choice.selected{border-color:var(--gold);background:#FFF3D6;}
+
+  .toast{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) translateY(-140%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:18px;display:flex;align-items:center;gap:10px;z-index:80;transition:transform .35s ease;max-width:88%;box-shadow:0 8px 20px rgba(0,0,0,.25);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast-emoji{font-size:1.5rem;flex-shrink:0;}
+  .toast b{font-family:var(--font-display);}
+  .toast span{font-size:.8rem;line-height:1.3;}
+
+  .confetti-piece{position:fixed;top:0;left:0;width:8px;height:14px;pointer-events:none;z-index:90;border-radius:2px;--dx:0px;animation:confettiFall linear forwards;}
+  @keyframes confettiFall{to{transform:translate(var(--dx),110vh) rotate(600deg);opacity:0;}}
+
+  .full-screen-msg{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:100;}
+  .full-screen-msg .big-emoji{font-size:3rem;margin-bottom:14px;}
+  .full-screen-msg h2{margin-bottom:8px;}
+  .full-screen-msg p{color:var(--ink-soft);font-size:.9rem;max-width:320px;}
+  .spin{animation:spin 1.1s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .whoami-row{display:flex;gap:10px;margin-top:10px;}
+  .whoami-card{flex:1;background:var(--surface);border-radius:var(--radius-lg);padding:22px 14px;text-align:center;cursor:pointer;border:3px solid transparent;box-shadow:3px 3px 0 #0000000d;}
+  .whoami-card:active{transform:scale(.97);}
+  .whoami-card .avatar-emoji{font-size:2.2rem;}
+  .whoami-card .player-name{margin-top:8px;font-size:1rem;}
+
+  @media (prefers-reduced-motion: reduce){
+    .scoreboard, .modal-sheet, .confetti-piece, .spin{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading / error overlays -->
+<div class="full-screen-msg" id="loadingScreen">
+  <div class="big-emoji spin">🔄</div>
+  <h2>Підключаємось...</h2>
+  <p>Зʼєднуємось зі спільною базою даних</p>
+</div>
+
+<div class="full-screen-msg" id="errorScreen" style="display:none;">
+  <div class="big-emoji">⚠️</div>
+  <h2>Не вдалося підключитись</h2>
+  <p id="errorDetail">Перевір, чи вставлено правильну конфігурацію Firebase у код і чи опубліковані правила Firestore.</p>
+  <button class="btn-secondary" style="margin-top:16px;" id="retryBtn">Спробувати ще раз</button>
+</div>
+
+<!-- Who-am-I picker for a returning/new device joining an existing game -->
+<div class="full-screen-msg" id="whoAmIScreen" style="display:none;">
+  <div class="big-emoji">👋</div>
+  <h2>Хто ти?</h2>
+  <p>Обери, ким ти є на цьому телефоні — це запамʼятається</p>
+  <div class="whoami-row" id="whoAmIChoices"></div>
+</div>
+
+<div class="app-shell" id="appShell" style="display:none;">
+  <header class="app-header">
+    <h1>Хатні Квести 🏠</h1>
+    <button class="icon-btn" id="settingsBtn" title="Налаштування">⚙️</button>
+  </header>
+
+  <div class="scoreboard" id="scoreboard"></div>
+
+  <main>
+    <div class="tab-panel active" id="tab-home">
+      <div id="questsSection"></div>
+      <h3 class="section-title">Останні події</h3>
+      <div id="activityFeed"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-chores">
+      <button class="btn-primary" id="addChoreBtn" style="margin-bottom:14px;">+ Додати справу</button>
+      <div id="choresList"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-stats">
+      <div id="statsContent"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-achievements">
+      <div id="achPlayerToggle"></div>
+      <div class="ach-grid" id="achGrid"></div>
+      <h3 class="section-title">Спільні досягнення 🤝</h3>
+      <div class="ach-grid" id="duoAchGrid"></div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="tab-btn active" data-tab="home"><span class="tab-emoji">🏠</span>Головна</button>
+    <button class="tab-btn" data-tab="chores"><span class="tab-emoji">📋</span>Справи</button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-emoji">📊</span>Статистика</button>
+    <button class="tab-btn" data-tab="achievements"><span class="tab-emoji">🏆</span>Нагороди</button>
+  </nav>
+</div>
+
+<!-- Setup / Settings modal -->
+<div class="modal-backdrop" id="setupModal">
+  <div class="modal-sheet">
+    <button class="close-x" id="closeSetupBtn">✕</button>
+    <h2 id="setupHeading">Хто грає? 🎮</h2>
+    <p class="sub" id="setupSub">Введіть імена та оберіть аватарки гравців</p>
+    <label>Гравець 1</label>
+    <input type="text" id="p1NameInput" maxlength="16" placeholder="Ім'я">
+    <div class="emoji-grid" id="p1EmojiGrid"></div>
+    <label>Гравець 2</label>
+    <input type="text" id="p2NameInput" maxlength="16" placeholder="Ім'я">
+    <div class="emoji-grid" id="p2EmojiGrid"></div>
+
+    <div id="setupWhoAmISection">
+      <label>На цьому телефоні я:</label>
+      <div class="setup-whoami-row" id="setupWhoAmIRow"></div>
+    </div>
+
+    <button class="btn-primary" id="setupSubmitBtn">Почати гру 🚀</button>
+    <button class="link-btn" id="changeWhoAmIBtn" style="display:none;margin-top:10px;">Це не я — обрати іншого гравця на цьому телефоні</button>
+    <button class="btn-secondary" id="resetProgressBtn" style="width:100%;margin-top:8px;display:none;color:#c94b4b;">🗑️ Скинути весь прогрес</button>
+  </div>
+</div>
+
+<!-- Add chore modal -->
+<div class="modal-backdrop" id="choreModal">
+  <div class="modal-sheet">
+    <h2>Нова справа ✨</h2>
+    <p class="sub">Додай справу, яку часто робите вдома</p>
+    <label>Назва</label>
+    <input type="text" id="choreTitleInput" maxlength="40" placeholder="Наприклад, погодувати кота">
+    <label>Емодзі</label>
+    <div class="emoji-grid" id="choreEmojiGrid"></div>
+    <label>Складність</label>
+    <select id="choreXpSelect">
+      <option value="10">Легка (10 XP)</option>
+      <option value="20" selected>Середня (20 XP)</option>
+      <option value="35">Складна (35 XP)</option>
+    </select>
+    <button class="btn-primary" id="choreSubmitBtn">Додати справу</button>
+  </div>
+</div>
+
+<!-- Mini-task modal -->
+<div class="modal-backdrop" id="miniTaskModal">
+  <div class="modal-sheet">
+    <h2 id="miniTaskTitle">Даси міні-завдання? 🎯</h2>
+    <p class="sub" id="miniTaskSubtitle">Обери виклик або напиши свій</p>
+    <div class="chip-list" id="miniTaskChips"></div>
+    <label>Або своє завдання</label>
+    <textarea id="miniTaskCustom" rows="2" placeholder="Напиши власний виклик..."></textarea>
+    <button class="btn-primary" id="miniTaskAssignBtn">Призначити 🎁</button>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;" id="miniTaskSkipBtn">Пропустити</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ======================================================================
+  // 1) FIREBASE CONFIG — замініть значення нижче на свої (Firebase Console
+  //    → Project settings → General → Your apps → SDK setup and configuration)
+  // ======================================================================
+  var FIREBASE_CONFIG = {
+    apiKey: "ВСТАВ_СЮДИ_apiKey",
+    authDomain: "ВСТАВ_СЮДИ.firebaseapp.com",
+    projectId: "ВСТАВ_СЮДИ",
+    storageBucket: "ВСТАВ_СЮДИ.appspot.com",
+    messagingSenderId: "ВСТАВ_СЮДИ",
+    appId: "ВСТАВ_СЮДИ"
+  };
+  var DOC_PATH = {collection:'houseQuests', doc:'shared'};
+  var MY_PLAYER_KEY = 'houseQuestMyPlayerId';
+
+  var PLAYER_EMOJIS = ['🦄','🐼','🦊','🐨','🐸','🦁','🐯','🐰','🐵','🐶','🐱','🦉'];
+  var CHORE_EMOJIS = ['📌','🍽️','🗑️','🧹','🪶','🛏️','🍳','🧺','🧼','🌿','👕','🛁','🪟','🐕','🧽','📦'];
+
+  var DEFAULT_CHORES = [
+    {id:'ch1',  title:'Помити посуд',        emoji:'🍽️', xp:15},
+    {id:'ch2',  title:'Винести сміття',      emoji:'🗑️', xp:10},
+    {id:'ch3',  title:'Пропилососити',       emoji:'🧹', xp:20},
+    {id:'ch4',  title:'Протерти пил',        emoji:'🪶', xp:10},
+    {id:'ch5',  title:'Заправити ліжко',     emoji:'🛏️', xp:5},
+    {id:'ch6',  title:'Приготувати вечерю',  emoji:'🍳', xp:25},
+    {id:'ch7',  title:'Попрати білизну',     emoji:'🧺', xp:20},
+    {id:'ch8',  title:'Помити підлогу',      emoji:'🧼', xp:25},
+    {id:'ch9',  title:'Полити квіти',        emoji:'🌿', xp:5},
+    {id:'ch10', title:'Погладити одяг',      emoji:'👕', xp:15},
+    {id:'ch11', title:'Прибрати ванну',      emoji:'🛁', xp:20},
+    {id:'ch12', title:'Помити вікна',        emoji:'🪟', xp:30}
+  ];
+
+  var MINI_TASK_IDEAS = [
+    'Заспівай пісню на всю гучність 🎤',
+    'Зроби 10 присідань 🏋️',
+    'Обійми партнера 30 секунд 🤗',
+    'Розкажи кумедний анекдот 😄',
+    'Зроби комплімент партнеру 💌',
+    'Станцюй 15 секунд 💃',
+    'Завари чай або каву для партнера ☕',
+    'Надішли смішний мем 📱',
+    'Зроби селфі в смішній позі 📸',
+    'Скажи 3 речі, за які вдячний(-а) партнеру 💫'
+  ];
+
+  var ACHIEVEMENTS = [
+    {id:'first_chore', title:'Перший крок',        emoji:'🐣', desc:'Виконай свою першу справу',        check:function(p){return p.completedCount>=1;}},
+    {id:'chores_10',    title:'Працьовита бджілка',  emoji:'🐝', desc:'Виконай 10 справ',                 check:function(p){return p.completedCount>=10;}},
+    {id:'chores_50',    title:'Машина чистоти',      emoji:'🧽', desc:'Виконай 50 справ',                 check:function(p){return p.completedCount>=50;}},
+    {id:'chores_100',   title:'Легенда дому',        emoji:'🏆', desc:'Виконай 100 справ',                check:function(p){return p.completedCount>=100;}},
+    {id:'level_5',      title:'Зірка',               emoji:'🌟', desc:'Досягни 5 рівня',                  check:function(p){return getLevelProgress(p.xp).level>=5;}},
+    {id:'level_10',     title:'У вогні',             emoji:'🔥', desc:'Досягни 10 рівня',                 check:function(p){return getLevelProgress(p.xp).level>=10;}},
+    {id:'streak_3',     title:'Розігрів',            emoji:'⚡', desc:'3 дні поспіль',                    check:function(p){return p.streak>=3;}},
+    {id:'streak_7',     title:'Тижневий вогонь',     emoji:'🔥', desc:'7 днів поспіль',                   check:function(p){return p.streak>=7;}},
+    {id:'early_bird',   title:'Рання пташка',        emoji:'🌅', desc:'Виконай справу до 8 ранку',        check:function(p){return !!p.earlyBird;}},
+    {id:'night_owl',    title:'Нічна сова',          emoji:'🌙', desc:'Виконай справу після 22:00',       check:function(p){return !!p.nightOwl;}},
+    {id:'quest_giver',  title:'Щедра душа',          emoji:'🎁', desc:'Признач 5 міні-завдань',           check:function(p){return p.miniTasksAssigned>=5;}},
+    {id:'quest_hero',   title:'Герой квестів',       emoji:'🎯', desc:'Виконай 5 міні-завдань',           check:function(p){return p.miniTasksCompleted>=5;}}
+  ];
+
+  var DUO_ACHIEVEMENTS = [
+    {id:'dynamic_duo',  title:'Динамічний дует', emoji:'🤝', desc:'Разом виконайте 50 справ',  check:function(s){return totalCompleted(s)>=50;}},
+    {id:'century_club', title:'Клуб сотні',      emoji:'💯', desc:'Разом виконайте 100 справ', check:function(s){return totalCompleted(s)>=100;}}
+  ];
+
+  var STATE = null;
+  var myPlayerId = localStorage.getItem(MY_PLAYER_KEY);
+  var setupEmojiSel = {p1:'🦄', p2:'🐨'};
+  var setupWhoAmI = null; // 'p1' or 'p2' — only used during first-time creation
+  var isFirstTimeSetup = false;
+  var choreEmojiSel = '📌';
+  var selectedChip = null;
+  var pendingMiniTaskFrom = null, pendingMiniTaskTo = null;
+  var currentAchPlayerIndex = 0;
+  var toastQueue = [], toastBusy = false;
+  var docRef = null;
+  var unsubscribeSnapshot = null;
+
+  // ---------- helpers ----------
+  function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+  function esc(str){ var d=document.createElement('div'); d.textContent = (str===undefined||str===null)?'':str; return d.innerHTML; }
+  function localDateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function timeAgo(ts){
+    var diff = Date.now()-ts, min = Math.floor(diff/60000);
+    if(min<1) return 'щойно';
+    if(min<60) return min+' хв тому';
+    var hr = Math.floor(min/60);
+    if(hr<24) return hr+' год тому';
+    var day = Math.floor(hr/24);
+    if(day<7) return day+' дн тому';
+    return new Date(ts).toLocaleDateString('uk-UA',{day:'numeric',month:'short'});
+  }
+  function getPlayerFrom(state,id){ return state.players.find(function(p){return p.id===id;}); }
+  function getPlayer(id){ return getPlayerFrom(STATE,id); }
+  function getPartner(id){ return STATE.players.find(function(p){return p.id!==id;}); }
+  function totalCompleted(state){ return state.players.reduce(function(s,p){return s+p.completedCount;},0); }
+  function xpForNextLevel(level){ return 100 + (level-1)*40; }
+  function getLevelProgress(xp){
+    var level=1, remaining=xp, need=xpForNextLevel(level);
+    while(remaining>=need){ remaining-=need; level++; need=xpForNextLevel(level); }
+    return {level:level, currentXpIntoLevel:remaining, xpNeeded:need};
+  }
+
+  // ---------- default state ----------
+  function initDefaultState(){
+    return {
+      players:[
+        {id:'p1', name:'', emoji:'🦄', xp:0, streak:0, lastActiveDate:null, completedCount:0, miniTasksAssigned:0, miniTasksCompleted:0, earlyBird:false, nightOwl:false, achievements:[]},
+        {id:'p2', name:'', emoji:'🐨', xp:0, streak:0, lastActiveDate:null, completedCount:0, miniTasksAssigned:0, miniTasksCompleted:0, earlyBird:false, nightOwl:false, achievements:[]}
+      ],
+      chores: DEFAULT_CHORES.map(function(c){ return Object.assign({},c); }),
+      history: [],
+      miniTasks: [],
+      duoAchievements: []
+    };
+  }
+
+  function updateStreak(player, dateStr){
+    if(player.lastActiveDate === dateStr) return;
+    if(player.lastActiveDate){
+      var prev = new Date(player.lastActiveDate);
+      var cur = new Date(dateStr);
+      var diffDays = Math.round((cur-prev)/86400000);
+      player.streak = diffDays===1 ? player.streak+1 : 1;
+    } else {
+      player.streak = 1;
+    }
+    player.lastActiveDate = dateStr;
+  }
+
+  function checkAchievements(draft, playerId){
+    var player = getPlayerFrom(draft, playerId);
+    ACHIEVEMENTS.forEach(function(a){
+      var already = player.achievements.some(function(x){ return x.id===a.id; });
+      if(!already && a.check(player)) player.achievements.push({id:a.id, ts:Date.now()});
+    });
+  }
+  function checkDuoAchievements(draft){
+    DUO_ACHIEVEMENTS.forEach(function(a){
+      var already = draft.duoAchievements.some(function(x){ return x.id===a.id; });
+      if(!already && a.check(draft)) draft.duoAchievements.push({id:a.id, ts:Date.now()});
+    });
+  }
+
+  // ---------- Firestore write helper ----------
+  // Clones current STATE, lets `mutatorFn` edit the draft in place, then
+  // writes the whole document back. All devices watching this document
+  // receive the change automatically via onSnapshot.
+  function applyMutation(mutatorFn){
+    var draft = clone(STATE);
+    mutatorFn(draft);
+    docRef.set(draft).catch(function(err){
+      console.error('Помилка збереження', err);
+      showToast('⚠️','Не вдалося зберегти','Перевір інтернет-зʼєднання');
+    });
+  }
+
+  // ---------- toasts & confetti ----------
+  function showToast(emoji,title,sub){
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span class="toast-emoji">'+emoji+'</span><span><b>'+esc(title)+'</b><br>'+esc(sub||'')+'</span>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add('show'); });
+    setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); },400); }, 3200);
+  }
+  function queueToast(emoji,title,sub){
+    toastQueue.push({emoji:emoji,title:title,sub:sub});
+    if(!toastBusy) processToastQueue();
+  }
+  function processToastQueue(){
+    if(toastQueue.length===0){ toastBusy=false; return; }
+    toastBusy = true;
+    var t = toastQueue.shift();
+    showToast(t.emoji,t.title,t.sub);
+    setTimeout(processToastQueue, 1600);
+  }
+  function spawnConfetti(x,y){
+    var colors = ['#FF5D8F','#2E9BFF','#FFC93C','#3ACB7E','#B983FF'];
+    for(var i=0;i<18;i++){
+      var el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = x+'px';
+      el.style.top = y+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.setProperty('--dx', ((Math.random()-0.5)*160)+'px');
+      el.style.animationDuration = (900+Math.random()*500)+'ms';
+      document.body.appendChild(el);
+      (function(node){ setTimeout(function(){ node.remove(); }, 1500); })(el);
+    }
+  }
+
+  // ---------- diff old vs new snapshot to decide what to celebrate ----------
+  function diffAndNotify(oldState, newState){
+    if(!oldState) return;
+    newState.players.forEach(function(p){
+      var old = getPlayerFrom(oldState, p.id);
+      if(!old) return;
+      var oldLevel = getLevelProgress(old.xp).level;
+      var newLevel = getLevelProgress(p.xp).level;
+      if(newLevel>oldLevel) queueToast('🎉','Новий рівень!', p.name+' тепер '+newLevel+' рівня!');
+      p.achievements.forEach(function(a){
+        var hadBefore = old.achievements.some(function(x){ return x.id===a.id; });
+        if(!hadBefore){
+          var def = ACHIEVEMENTS.find(function(d){ return d.id===a.id; });
+          if(def) queueToast(def.emoji,'Досягнення розблоковано!', p.name+': '+def.title);
+        }
+      });
+    });
+    newState.duoAchievements.forEach(function(a){
+      var hadBefore = oldState.duoAchievements.some(function(x){ return x.id===a.id; });
+      if(!hadBefore){
+        var def = DUO_ACHIEVEMENTS.find(function(d){ return d.id===a.id; });
+        if(def) queueToast(def.emoji,'Спільне досягнення!', def.title);
+      }
+    });
+    newState.miniTasks.forEach(function(t){
+      var existedBefore = oldState.miniTasks.some(function(x){ return x.id===t.id; });
+      if(!existedBefore && t.toPlayerId===myPlayerId){
+        var from = getPlayerFrom(newState, t.fromPlayerId);
+        queueToast('🎯','Нове завдання тобі!', (from?from.name:'Партнер')+': '+t.text);
+      }
+    });
+  }
+
+  // ---------- actions (all go through Firestore) ----------
+  function completeChore(choreId, playerId, evt){
+    if(evt && evt.target){
+      var r = evt.target.getBoundingClientRect();
+      spawnConfetti(r.left+r.width/2, r.top+r.height/2);
+    }
+    applyMutation(function(draft){
+      var chore = draft.chores.find(function(c){ return c.id===choreId; });
+      var player = getPlayerFrom(draft, playerId);
+      if(!chore || !player) return;
+      player.xp += chore.xp;
+      player.completedCount++;
+      var now = Date.now();
+      var hour = new Date(now).getHours();
+      if(hour<8) player.earlyBird = true;
+      if(hour>=22) player.nightOwl = true;
+      updateStreak(player, localDateStr(new Date(now)));
+      draft.history.unshift({id:uid(), choreId:chore.id, title:chore.title, emoji:chore.emoji, xp:chore.xp, playerId:player.id, ts:now});
+      if(draft.history.length>200) draft.history.length = 200;
+      checkAchievements(draft, playerId);
+      checkDuoAchievements(draft);
+    });
+    pendingMiniTaskFrom = playerId;
+    pendingMiniTaskTo = getPartner(playerId).id;
+    openMiniTaskModal();
+  }
+
+  function deleteChore(id){
+    var chore = STATE.chores.find(function(c){ return c.id===id; });
+    if(!chore) return;
+    if(confirm('Видалити «'+chore.title+'»?')){
+      applyMutation(function(draft){
+        draft.chores = draft.chores.filter(function(c){ return c.id!==id; });
+      });
+    }
+  }
+
+  function completeMiniTask(id, evt){
+    if(evt && evt.target){
+      var r = evt.target.getBoundingClientRect();
+      spawnConfetti(r.left+r.width/2, r.top+r.height/2);
+    }
+    var task = STATE.miniTasks.find(function(t){ return t.id===id; });
+    if(!task || task.done) return;
+    applyMutation(function(draft){
+      var t = draft.miniTasks.find(function(x){ return x.id===id; });
+      if(!t || t.done) return;
+      t.done = true;
+      t.doneTs = Date.now();
+      var player = getPlayerFrom(draft, t.toPlayerId);
+      player.xp += 8;
+      player.miniTasksCompleted++;
+      checkAchievements(draft, t.toPlayerId);
+      checkDuoAchievements(draft);
+    });
+  }
+
+  function switchAchPlayer(i){ currentAchPlayerIndex = i; renderAchievements(); }
+
+  function resetProgress(){
+    if(confirm('Точно скинути весь прогрес (XP, досягнення, історію)? Список справ та імена залишаться. Це торкнеться обох телефонів і не можна відмінити.')){
+      applyMutation(function(draft){
+        draft.players.forEach(function(p){
+          p.xp=0; p.streak=0; p.lastActiveDate=null; p.completedCount=0;
+          p.miniTasksAssigned=0; p.miniTasksCompleted=0; p.earlyBird=false; p.nightOwl=false; p.achievements=[];
+        });
+        draft.history=[];
+        draft.miniTasks=[];
+        draft.duoAchievements=[];
+      });
+      closeModal('setupModal');
+    }
+  }
+
+  window.completeChore = completeChore;
+  window.deleteChore = deleteChore;
+  window.completeMiniTask = completeMiniTask;
+  window.switchAchPlayer = switchAchPlayer;
+
+  // ---------- rendering ----------
+  function render(){
+    renderScoreboard();
+    renderQuests();
+    renderActivity();
+    renderChores();
+    renderStats();
+    renderAchievements();
+  }
+
+  function renderScoreboard(){
+    var cards = STATE.players.map(function(p,idx){
+      var cls = idx===0 ? 'p1' : 'p2';
+      var lvl = getLevelProgress(p.xp);
+      var pct = Math.round((lvl.currentXpIntoLevel/lvl.xpNeeded)*100);
+      return '<div class="player-card '+cls+'">'
+        +'<div class="level-ring" style="background:conic-gradient(var(--'+cls+') '+(pct*3.6)+'deg, #00000014 0deg);">'
+        +'<div class="ring-inner"><span class="lvl-num">'+lvl.level+'</span><span class="lvl-word">рівень</span></div></div>'
+        +'<div class="avatar-emoji">'+p.emoji+'</div>'
+        +'<div class="player-name">'+esc(p.name||'Гравець')+'</div>'
+        +(p.id===myPlayerId ? '<div class="you-tag">це ти</div>' : '')
+        +'<div class="xp-bar-track"><div class="xp-bar-fill" style="width:'+pct+'%;"></div></div>'
+        +'<div class="xp-caption">'+lvl.currentXpIntoLevel+'/'+lvl.xpNeeded+' XP</div>'
+        +(p.streak>0 ? '<div class="streak-pill">🔥 '+p.streak+' дн поспіль</div>' : '')
+        +'</div>';
+    });
+    document.getElementById('scoreboard').innerHTML = cards.join('<div class="vs-badge">VS</div>');
+  }
+
+  function renderQuests(){
+    var pending = STATE.miniTasks.filter(function(t){ return !t.done; });
+    var section = document.getElementById('questsSection');
+    if(pending.length===0){ section.innerHTML=''; return; }
+    var html = '<h3 class="section-title">Активні виклики 🎯</h3>';
+    html += pending.map(function(t){
+      var to = getPlayer(t.toPlayerId), from = getPlayer(t.fromPlayerId);
+      return '<div class="quest-card"><span class="quest-emoji">'+to.emoji+'</span>'
+        +'<div class="quest-text"><small>'+esc(from.name)+' → '+esc(to.name)+(to.id===myPlayerId?' (тобі)':'')+'</small>'+esc(t.text)+'</div>'
+        +'<button class="btn-done" onclick="completeMiniTask(\''+t.id+'\', event)">Готово ✅</button></div>';
+    }).join('');
+    section.innerHTML = html;
+  }
+
+  function renderActivity(){
+    var feed = document.getElementById('activityFeed');
+    var items = STATE.history.slice(0,8);
+    if(items.length===0){ feed.innerHTML = '<p class="empty-note">Ще немає виконаних справ. Час до діла! 💪</p>'; return; }
+    feed.innerHTML = items.map(function(h){
+      var p = getPlayer(h.playerId);
+      return '<div class="activity-item"><span class="a-emoji">'+h.emoji+'</span>'
+        +'<span class="a-meta"><b>'+esc(p.name)+'</b> виконав(-ла) «'+esc(h.title)+'» '
+        +'<span style="color:#c98a00;font-weight:800;">+'+h.xp+' XP</span></span>'
+        +'<span class="a-time">'+timeAgo(h.ts)+'</span></div>';
+    }).join('');
+  }
+
+  function renderChores(){
+    var list = document.getElementById('choresList');
+    if(STATE.chores.length===0){ list.innerHTML = '<p class="empty-note">Список порожній — додай першу справу!</p>'; return; }
+    list.innerHTML = STATE.chores.map(function(c){
+      var p1 = STATE.players[0], p2 = STATE.players[1];
+      return '<div class="chore-row">'
+        +'<div class="chore-emoji">'+c.emoji+'</div>'
+        +'<div class="chore-info"><div class="chore-title">'+esc(c.title)+'</div><div class="chore-xp">+'+c.xp+' XP</div></div>'
+        +'<div class="chore-actions">'
+        +'<button class="avatar-btn p1'+(p1.id===myPlayerId?' me':'')+'" title="'+esc(p1.name)+'" onclick="completeChore(\''+c.id+'\',\''+p1.id+'\', event)">'+p1.emoji+'</button>'
+        +'<button class="avatar-btn p2'+(p2.id===myPlayerId?' me':'')+'" title="'+esc(p2.name)+'" onclick="completeChore(\''+c.id+'\',\''+p2.id+'\', event)">'+p2.emoji+'</button>'
+        +'<button class="chore-del" onclick="deleteChore(\''+c.id+'\')">✕</button>'
+        +'</div></div>';
+    }).join('');
+  }
+
+  function getWeekData(){
+    var days = [];
+    for(var i=6;i>=0;i--){
+      var d = new Date(); d.setDate(d.getDate()-i);
+      days.push({key: localDateStr(d), label: d.toLocaleDateString('uk-UA',{weekday:'short'}), p1:0, p2:0});
+    }
+    STATE.history.forEach(function(h){
+      var key = localDateStr(new Date(h.ts));
+      var day = days.find(function(x){ return x.key===key; });
+      if(day){
+        if(h.playerId===STATE.players[0].id) day.p1 += h.xp; else day.p2 += h.xp;
+      }
+    });
+    return days;
+  }
+
+  function renderStats(){
+    var container = document.getElementById('statsContent');
+    var week = getWeekData();
+    var maxVal = Math.max(1, Math.max.apply(null, week.map(function(d){ return Math.max(d.p1,d.p2); })));
+    var chartHtml = '<div class="chart">'+week.map(function(d){
+      return '<div class="chart-col"><div class="chart-bars">'
+        +'<div class="chart-bar p1" style="height:'+(d.p1/maxVal*100)+'%;"></div>'
+        +'<div class="chart-bar p2" style="height:'+(d.p2/maxVal*100)+'%;"></div>'
+        +'</div><div class="chart-label">'+d.label+'</div></div>';
+    }).join('')+'</div>';
+
+    var w1=0, w2=0;
+    week.forEach(function(d){ w1+=d.p1; w2+=d.p2; });
+    var sum = (w1+w2) || 1;
+    var pct1 = Math.round(w1/sum*100), pct2 = 100-pct1;
+    var leaderText;
+    if(w1===w2) leaderText = 'Цього тижня нічия! 🤝';
+    else leaderText = 'Цього тижня попереду '+(w1>w2?STATE.players[0].name:STATE.players[1].name)+' 🎉';
+
+    var balanceHtml = '<div class="balance-track">'
+      +'<div class="balance-seg" style="width:'+pct1+'%;background:var(--p1);">'+pct1+'%</div>'
+      +'<div class="balance-seg" style="width:'+pct2+'%;background:var(--p2);">'+pct2+'%</div>'
+      +'</div><p class="balance-caption">'+leaderText+'</p>';
+
+    var statsGridHtml = '<div class="stats-grid">'+STATE.players.map(function(p){
+      return '<div class="stat-box-player"><h4>'+p.emoji+' '+esc(p.name)+'</h4>'
+        +'<div class="stat-row"><span>Всього XP</span><b>'+p.xp+'</b></div>'
+        +'<div class="stat-row"><span>Справ виконано</span><b>'+p.completedCount+'</b></div>'
+        +'<div class="stat-row"><span>Серія днів</span><b>'+p.streak+' 🔥</b></div></div>';
+    }).join('')+'</div>';
+
+    container.innerHTML = '<h3 class="section-title">Тиждень у XP</h3>'+chartHtml+balanceHtml
+      +'<h3 class="section-title">Загальна статистика</h3>'+statsGridHtml;
+  }
+
+  function achBadge(unlocked, emoji, title, desc){
+    return '<div class="ach-item '+(unlocked?'':'locked')+'" title="'+esc(desc)+'">'
+      +'<div class="ach-emoji">'+(unlocked?emoji:'🔒')+'</div>'
+      +'<div class="ach-title">'+esc(title)+'</div>'
+      +(unlocked ? '<div class="ach-date">'+new Date(unlocked.ts).toLocaleDateString('uk-UA')+'</div>' : '')
+      +'</div>';
+  }
+
+  function renderAchievements(){
+    var toggle = document.getElementById('achPlayerToggle');
+    toggle.innerHTML = STATE.players.map(function(p,i){
+      var active = i===currentAchPlayerIndex;
+      var color = i===0 ? 'var(--p1)' : 'var(--p2)';
+      var bg = i===0 ? 'var(--p1-soft)' : 'var(--p2-soft)';
+      var style = active ? 'border-color:'+color+';background:'+bg+';' : '';
+      return '<button class="btn-secondary" style="'+style+'" onclick="switchAchPlayer('+i+')">'+p.emoji+' '+esc(p.name)+'</button>';
+    }).join('');
+
+    var player = STATE.players[currentAchPlayerIndex];
+    document.getElementById('achGrid').innerHTML = ACHIEVEMENTS.map(function(a){
+      var unlocked = player.achievements.find(function(x){ return x.id===a.id; });
+      return achBadge(unlocked, a.emoji, a.title, a.desc);
+    }).join('');
+
+    document.getElementById('duoAchGrid').innerHTML = DUO_ACHIEVEMENTS.map(function(a){
+      var unlocked = STATE.duoAchievements.find(function(x){ return x.id===a.id; });
+      return achBadge(unlocked, a.emoji, a.title, a.desc);
+    }).join('');
+  }
+
+  // ---------- modals ----------
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+  function buildEmojiGrid(containerId, playerKey){
+    var el = document.getElementById(containerId);
+    el.innerHTML = PLAYER_EMOJIS.map(function(e){
+      return '<div class="emoji-choice '+(setupEmojiSel[playerKey]===e?'selected':'')+'" data-emoji="'+e+'">'+e+'</div>';
+    }).join('');
+    el.querySelectorAll('.emoji-choice').forEach(function(node){
+      node.addEventListener('click', function(){
+        setupEmojiSel[playerKey] = node.getAttribute('data-emoji');
+        el.querySelectorAll('.emoji-choice').forEach(function(n){ n.classList.remove('selected'); });
+        node.classList.add('selected');
+      });
+    });
+  }
+
+  function buildChoreEmojiGrid(){
+    var el = document.getElementById('choreEmojiGrid');
+    el.innerHTML = CHORE_EMOJIS.map(function(e){
+      return '<div class="emoji-choice '+(choreEmojiSel===e?'selected':'')+'" data-emoji="'+e+'">'+e+'</div>';
+    }).join('');
+    el.querySelectorAll('.emoji-choice').forEach(function(node){
+      node.addEventListener('click', function(){
+        choreEmojiSel = node.getAttribute('data-emoji');
+        el.querySelectorAll('.emoji-choice').forEach(function(n){ n.classList.remove('selected'); });
+        node.classList.add('selected');
+      });
+    });
+  }
+
+  function buildSetupWhoAmIRow(){
+    var el = document.getElementById('setupWhoAmIRow');
+    var n1 = document.getElementById('p1NameInput').value.trim() || 'Гравець 1';
+    var n2 = document.getElementById('p2NameInput').value.trim() || 'Гравець 2';
+    el.innerHTML =
+      '<div class="setup-whoami-choice '+(setupWhoAmI==='p1'?'selected':'')+'" data-who="p1">'+setupEmojiSel.p1+' '+esc(n1)+'</div>'
+      +'<div class="setup-whoami-choice '+(setupWhoAmI==='p2'?'selected':'')+'" data-who="p2">'+setupEmojiSel.p2+' '+esc(n2)+'</div>';
+    el.querySelectorAll('.setup-whoami-choice').forEach(function(node){
+      node.addEventListener('click', function(){
+        setupWhoAmI = node.getAttribute('data-who');
+        el.querySelectorAll('.setup-whoami-choice').forEach(function(n){ n.classList.remove('selected'); });
+        node.classList.add('selected');
+      });
+    });
+  }
+
+  function openCreateGameModal(){
+    isFirstTimeSetup = true;
+    setupWhoAmI = null;
+    document.getElementById('setupHeading').textContent = 'Хто грає? 🎮';
+    document.getElementById('setupSub').textContent = "Введіть імена, оберіть аватарки і познач, ким ти є";
+    document.getElementById('p1NameInput').value = '';
+    document.getElementById('p2NameInput').value = '';
+    setupEmojiSel = {p1:'🦄', p2:'🐨'};
+    buildEmojiGrid('p1EmojiGrid','p1');
+    buildEmojiGrid('p2EmojiGrid','p2');
+    document.getElementById('setupWhoAmISection').style.display = 'block';
+    buildSetupWhoAmIRow();
+    document.getElementById('closeSetupBtn').style.display = 'none';
+    document.getElementById('changeWhoAmIBtn').style.display = 'none';
+    document.getElementById('resetProgressBtn').style.display = 'none';
+    document.getElementById('setupSubmitBtn').textContent = 'Почати гру 🚀';
+    openModal('setupModal');
+  }
+
+  function openSettings(){
+    isFirstTimeSetup = false;
+    document.getElementById('setupHeading').textContent = 'Налаштування ⚙️';
+    document.getElementById('setupSub').textContent = 'Зміни імена чи аватарки гравців';
+    document.getElementById('p1NameInput').value = STATE.players[0].name;
+    document.getElementById('p2NameInput').value = STATE.players[1].name;
+    setupEmojiSel.p1 = STATE.players[0].emoji;
+    setupEmojiSel.p2 = STATE.players[1].emoji;
+    buildEmojiGrid('p1EmojiGrid','p1');
+    buildEmojiGrid('p2EmojiGrid','p2');
+    document.getElementById('setupWhoAmISection').style.display = 'none';
+    document.getElementById('closeSetupBtn').style.display = 'block';
+    document.getElementById('changeWhoAmIBtn').style.display = 'block';
+    document.getElementById('resetProgressBtn').style.display = 'block';
+    document.getElementById('setupSubmitBtn').textContent = 'Зберегти';
+    openModal('setupModal');
+  }
+
+  function createSharedGame(){
+    var n1 = document.getElementById('p1NameInput').value.trim() || 'Гравець 1';
+    var n2 = document.getElementById('p2NameInput').value.trim() || 'Гравець 2';
+    if(!setupWhoAmI){
+      alert('Познач, ким ти є на цьому телефоні 🙂');
+      return;
+    }
+    var fresh = initDefaultState();
+    fresh.players[0].name = n1; fresh.players[0].emoji = setupEmojiSel.p1;
+    fresh.players[1].name = n2; fresh.players[1].emoji = setupEmojiSel.p2;
+    var chosenId = setupWhoAmI==='p1' ? fresh.players[0].id : fresh.players[1].id;
+    docRef.set(fresh).then(function(){
+      myPlayerId = chosenId;
+      localStorage.setItem(MY_PLAYER_KEY, myPlayerId);
+      STATE = fresh;
+      closeModal('setupModal');
+      startLiveSync();
+    }).catch(function(err){
+      showErrorScreen('Не вдалося створити гру: '+err.message);
+    });
+  }
+
+  function saveSettingsNames(){
+    applyMutation(function(draft){
+      var n1 = document.getElementById('p1NameInput').value.trim();
+      var n2 = document.getElementById('p2NameInput').value.trim();
+      if(n1) draft.players[0].name = n1;
+      draft.players[0].emoji = setupEmojiSel.p1;
+      if(n2) draft.players[1].name = n2;
+      draft.players[1].emoji = setupEmojiSel.p2;
+    });
+    closeModal('setupModal');
+  }
+
+  function submitChore(){
+    var title = document.getElementById('choreTitleInput').value.trim();
+    if(!title) return;
+    var xp = parseInt(document.getElementById('choreXpSelect').value, 10);
+    applyMutation(function(draft){
+      draft.chores.push({id: uid(), title: title, emoji: choreEmojiSel, xp: xp});
+    });
+    closeModal('choreModal');
+  }
+
+  function openMiniTaskModal(){
+    var from = getPlayer(pendingMiniTaskFrom), to = getPlayer(pendingMiniTaskTo);
+    document.getElementById('miniTaskTitle').textContent = 'Даси завдання '+to.name+'? 🎯';
+    document.getElementById('miniTaskSubtitle').textContent = 'Обери виклик або напиши свій';
+    selectedChip = null;
+    document.getElementById('miniTaskCustom').value = '';
+    var chipsEl = document.getElementById('miniTaskChips');
+    chipsEl.innerHTML = MINI_TASK_IDEAS.map(function(t){
+      return '<div class="chip" data-text="'+esc(t)+'">'+esc(t)+'</div>';
+    }).join('');
+    chipsEl.querySelectorAll('.chip').forEach(function(node){
+      node.addEventListener('click', function(){
+        chipsEl.querySelectorAll('.chip').forEach(function(n){ n.classList.remove('selected'); });
+        node.classList.add('selected');
+        selectedChip = node.getAttribute('data-text');
+        document.getElementById('miniTaskCustom').value = '';
+      });
+    });
+    openModal('miniTaskModal');
+  }
+
+  function assignMiniTask(){
+    var custom = document.getElementById('miniTaskCustom').value.trim();
+    var text = selectedChip || custom;
+    closeModal('miniTaskModal');
+    if(!text) return;
+    var fromId = pendingMiniTaskFrom, toId = pendingMiniTaskTo;
+    applyMutation(function(draft){
+      draft.miniTasks.unshift({id: uid(), fromPlayerId: fromId, toPlayerId: toId, text: text, done:false, ts: Date.now()});
+      var fromPlayer = getPlayerFrom(draft, fromId);
+      fromPlayer.miniTasksAssigned++;
+      checkAchievements(draft, fromId);
+    });
+  }
+
+  // ---------- who-am-I picker (existing game, new device) ----------
+  function showWhoAmIPicker(){
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('errorScreen').style.display = 'none';
+    var el = document.getElementById('whoAmIChoices');
+    el.innerHTML = STATE.players.map(function(p){
+      return '<div class="whoami-card" data-id="'+p.id+'"><div class="avatar-emoji">'+p.emoji+'</div><div class="player-name">'+esc(p.name)+'</div></div>';
+    }).join('');
+    el.querySelectorAll('.whoami-card').forEach(function(node){
+      node.addEventListener('click', function(){
+        myPlayerId = node.getAttribute('data-id');
+        localStorage.setItem(MY_PLAYER_KEY, myPlayerId);
+        startLiveSync();
+      });
+    });
+    document.getElementById('whoAmIScreen').style.display = 'flex';
+  }
+
+  function changeWhoAmI(){
+    closeModal('setupModal');
+    localStorage.removeItem(MY_PLAYER_KEY);
+    myPlayerId = null;
+    if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    document.getElementById('appShell').style.display = 'none';
+    showWhoAmIPicker();
+  }
+
+  // ---------- screens ----------
+  function showErrorScreen(detail){
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('whoAmIScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
+    if(detail) document.getElementById('errorDetail').textContent = detail;
+    document.getElementById('errorScreen').style.display = 'flex';
+  }
+
+  function startLiveSync(){
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('errorScreen').style.display = 'none';
+    document.getElementById('whoAmIScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    if(unsubscribeSnapshot) return; // already listening
+    unsubscribeSnapshot = docRef.onSnapshot(function(snap){
+      var newState = snap.data();
+      if(!newState) return;
+      diffAndNotify(STATE, newState);
+      STATE = newState;
+      render();
+    }, function(err){
+      console.error(err);
+      showToast('⚠️','Проблема зі з’єднанням', 'Дані можуть бути застарілими');
+    });
+  }
+
+  // ---------- tabs ----------
+  function switchTab(tab){
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('tab-'+tab).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===tab); });
+  }
+
+  // ---------- boot ----------
+  function boot(){
+    document.querySelectorAll('.tab-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
+    });
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('setupSubmitBtn').addEventListener('click', function(){
+      if(isFirstTimeSetup) createSharedGame(); else saveSettingsNames();
+    });
+    document.getElementById('closeSetupBtn').addEventListener('click', function(){ closeModal('setupModal'); });
+    document.getElementById('changeWhoAmIBtn').addEventListener('click', changeWhoAmI);
+    document.getElementById('resetProgressBtn').addEventListener('click', resetProgress);
+    document.getElementById('p1NameInput').addEventListener('input', function(){ if(isFirstTimeSetup) buildSetupWhoAmIRow(); });
+    document.getElementById('p2NameInput').addEventListener('input', function(){ if(isFirstTimeSetup) buildSetupWhoAmIRow(); });
+
+    document.getElementById('addChoreBtn').addEventListener('click', function(){
+      document.getElementById('choreTitleInput').value = '';
+      choreEmojiSel = '📌';
+      buildChoreEmojiGrid();
+      openModal('choreModal');
+    });
+    document.getElementById('choreSubmitBtn').addEventListener('click', submitChore);
+
+    document.getElementById('miniTaskAssignBtn').addEventListener('click', assignMiniTask);
+    document.getElementById('miniTaskSkipBtn').addEventListener('click', function(){ closeModal('miniTaskModal'); });
+    document.getElementById('miniTaskCustom').addEventListener('input', function(){
+      selectedChip = null;
+      document.querySelectorAll('#miniTaskChips .chip').forEach(function(n){ n.classList.remove('selected'); });
+    });
+    document.getElementById('retryBtn').addEventListener('click', function(){
+      document.getElementById('errorScreen').style.display = 'none';
+      document.getElementById('loadingScreen').style.display = 'flex';
+      connect();
+    });
+
+    buildChoreEmojiGrid();
+    connect();
+  }
+
+  function connect(){
+    try{
+      if(!firebase.apps || !firebase.apps.length){ firebase.initializeApp(FIREBASE_CONFIG); }
+      var db = firebase.firestore();
+      docRef = db.collection(DOC_PATH.collection).doc(DOC_PATH.doc);
+    }catch(e){
+      showErrorScreen('Помилка ініціалізації Firebase: '+e.message);
+      return;
+    }
+    docRef.get().then(function(snap){
+      if(!snap.exists){
+        document.getElementById('loadingScreen').style.display = 'none';
+        openCreateGameModal();
+        document.getElementById('appShell').style.display = 'flex';
+        STATE = initDefaultState();
+        render();
+      } else {
+        STATE = snap.data();
+        if(myPlayerId && getPlayer(myPlayerId)){
+          startLiveSync();
+        } else {
+          showWhoAmIPicker();
+        }
+      }
+    }).catch(function(err){
+      console.error(err);
+      showErrorScreen('Помилка доступу до бази: '+err.message+'. Перевір конфігурацію та правила Firestore.');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+</body>
+</html>
